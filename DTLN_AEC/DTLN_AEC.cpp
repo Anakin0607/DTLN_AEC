@@ -2,6 +2,7 @@
 
 #include <tensorflow/lite/c/common.h>
 #include <tensorflow/lite/c/c_api.h>
+#include <limits.h>
 
 #include "dtln_aec_128_1.h"
 #include "dtln_aec_128_2.h"
