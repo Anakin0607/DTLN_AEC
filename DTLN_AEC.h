@@ -21,7 +21,7 @@ public:
 	~DTLN_AEC();
 
 	//Return number of input samples, -1 = Fail
-	int Init(void);
+	int Init(const char* model_path1, const char* model_path2);
 
 	//0 = Success, -1 = Fail
 	int Process(short *lpsRefBuffer, short *lpsRecBuffer, short *lpsOutputBuffer);

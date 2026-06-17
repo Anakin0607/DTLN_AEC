@@ -4,12 +4,8 @@
 #include <tensorflow/lite/c/c_api.h>
 #include <limits.h>
 
-#include "dtln_aec_128_1.h"
-#include "dtln_aec_128_2.h"
-
 //Use KissFFT https://github.com/mborgerding/kissfft
 #include "kiss_fftr.h"
-
 #include "DTLN_AEC.h"
 
 //1 Network contain 2 models
@@ -29,7 +25,7 @@ class DTLN_AEC::m_Impl
 {
 public:
 	
-	int Init(void);
+	int Init(const char* model_path1, const char* model_path2);
 	void Release(void);
 
 	int Process(short *lpsRefBuffer, short *lpsRecBuffer, short *lpsOutputBuffer);
@@ -78,14 +74,16 @@ public:
 		
 };
 
-int DTLN_AEC::m_Impl::Init(void)
+int DTLN_AEC::m_Impl::Init(const char* model_path1, const char* model_path2)
 {
 	int nRet = -1;
 
-	do 
-	{
-		for (int i = 0; i < k_nNumModels; i++)
-		{
+	if(model_path1 == nullptr || model_path2 == nullptr){
+		return -2;
+	}
+
+	do {
+		for (int i = 0; i < k_nNumModels; i++){
 			this->m_lppoTfliteModel[i] = nullptr;
 			this->m_lppoInterpreter[i] = nullptr;
 
@@ -93,8 +91,11 @@ int DTLN_AEC::m_Impl::Init(void)
 		}
 
 		//Load models
-		this->m_lppoTfliteModel[0] = TfLiteModelCreate(k_lpszModel1Tflite, k_nModel1TfliteLen);
-		this->m_lppoTfliteModel[1] = TfLiteModelCreate(k_lpszModel2Tflite, k_nModel2TfliteLen);
+		// this->m_lppoTfliteModel[0] = TfLiteModelCreate(k_lpszModel1Tflite, k_nModel1TfliteLen);
+		// this->m_lppoTfliteModel[1] = TfLiteModelCreate(k_lpszModel2Tflite, k_nModel2TfliteLen);
+
+		this->m_lppoTfliteModel[0] = TfLiteModelCreateFromFile(model_path1);
+		this->m_lppoTfliteModel[1] = TfLiteModelCreateFromFile(model_path2);
 
 		if (this->m_lppoTfliteModel[0] == nullptr || this->m_lppoTfliteModel[1] == nullptr)
 			break;
@@ -432,9 +433,9 @@ DTLN_AEC::~DTLN_AEC()
 	this->m_lpoImpl = nullptr;
 }
 
-int DTLN_AEC::Init(void)
+int DTLN_AEC::Init(const char* model_path1, const char* model_path2)
 {
-	return this->m_lpoImpl->Init();
+	return this->m_lpoImpl->Init(model_path1, model_path2);
 }
 
 int DTLN_AEC::Process(short *lpsRefBuffer, short *lpsRecBuffer, short *lpsOutputBuffer)

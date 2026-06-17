@@ -23,7 +23,7 @@ endif()
 
 # Set default installation prefix to: <build_dir>/install/DTLN_AEC_<architecture>
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-    set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install/${PROJECT_NAME}_${ARCH_NAME}" 
+    set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/../${PROJECT_NAME}_${ARCH_NAME}" 
         CACHE PATH "Default install path" FORCE)
 endif()
 
@@ -64,7 +64,7 @@ if(BUILD_TFLITE_FROM_SOURCE)
     set(FETCHCONTENT_QUIET FALSE)
 
     # [ACTION REQUIRED]: Change this tag to match your previous TFLite version!
-    set(TFLITE_VERSION "v2.12.0" CACHE STRING "TensorFlow Lite version tag")
+    set(TFLITE_VERSION "v2.16.1" CACHE STRING "TensorFlow Lite version tag")
     
     FetchContent_Declare(
         tensorflow
@@ -88,6 +88,8 @@ else()
     message(STATUS "Using prebuilt TensorFlow Lite libraries...")
     set(TFLITE_LIB_TARGET tensorflowlite_c)
     set(TFLITE_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/TensorFlowLite)
+    link_directories(${CMAKE_SOURCE_DIR}/TensorFlowLite/lib/${ARCH_NAME})
+    include_directories(${CMAKE_SOURCE_DIR}/TensorFlowLite)
 endif()
 
 # ==============================================================================
@@ -113,17 +115,15 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 )
 
 # Link directories and libraries
-if(BUILD_TFLITE_FROM_SOURCE)
-    target_link_libraries(${PROJECT_NAME} PRIVATE ${TFLITE_LIB_TARGET})
-else()
-    if(WIN32)
-        target_link_directories(${PROJECT_NAME} PRIVATE
-            "$<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/TensorFlowLite/lib/Debug>"
-            "$<$<CONFIG:Release>:${CMAKE_CURRENT_SOURCE_DIR}/TensorFlowLite/lib/Release>"
-        )
-    endif()
-    target_link_libraries(${PROJECT_NAME} PRIVATE ${TFLITE_LIB_TARGET})
+
+if(WIN32)
+    target_link_directories(${PROJECT_NAME} PRIVATE
+        "$<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/TensorFlowLite/lib/Debug>"
+        "$<$<CONFIG:Release>:${CMAKE_CURRENT_SOURCE_DIR}/TensorFlowLite/lib/Release>"
+    )
 endif()
+target_link_libraries(${PROJECT_NAME} PRIVATE ${TFLITE_LIB_TARGET})
+
 
 # ==============================================================================
 # 5. Installation Rules
@@ -137,4 +137,25 @@ install(TARGETS ${PROJECT_NAME}
 
 # Install headers maintaining directory structure
 install(FILES DTLN_AEC.h DESTINATION include)
-install(DIRECTORY kissfft/ DESTINATION include/kissfft FILES_MATCHING PATTERN "*.h" PATTERN "*.hh")
+
+# Install tflite lib
+if(BUILD_TFLITE_FROM_SOURCE)
+    # Use $<TARGET_FILE> to auto catch dynamic lib file by TFLite ，and give the exec permission (PROGRAMS)
+    install(PROGRAMS $<TARGET_FILE:${TFLITE_LIB_TARGET}> DESTINATION lib)
+
+    # If on windows, copy the lib file
+    if(WIN32)
+        install(FILES $<TARGET_LINKER_FILE:${TFLITE_LIB_TARGET}> DESTINATION lib OPTIONAL)
+    endif()
+else()
+    # If use the pre compile
+    if(WIN32)
+        install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/TensorFlowLite/lib/$<CONFIG>/tensorflowlite_c.dll"
+                DESTINATION bin OPTIONAL)
+        install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/TensorFlowLite/lib/$<CONFIG>/tensorflowlite_c.lib"
+                DESTINATION lib OPTIONAL)
+    else()
+        install(PROGRAMS "${CMAKE_SOURCE_DIR}/TensorFlowLite/lib/${ARCH_NAME}/libtensorflowlite_c.so"
+                DESTINATION lib OPTIONAL)
+    endif()
+endif()

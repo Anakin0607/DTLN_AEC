@@ -3,14 +3,15 @@
 #include <string>
 #include "DTLN_AEC.h"
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]){
     //lpszInputRefWave is a reference data(far end)
     //lpszInputRecWave is a recording data(near end recording)
 
     std::string lpszInputRefWave = std::string(argv[1]);
     std::string lpszInputRecWave = std::string(argv[2]);
     std::string lpszOutputWave = std::string(argv[3]);
+    std::string model1 = std::string(argv[4]);
+    std::string model2 = std::string(argv[5]);
 
     FILE *lpoInputRefFile = NULL;
     FILE *lpoInputRecFile = NULL;
@@ -28,7 +29,7 @@ int main(int argc, char *argv[])
 
     DTLN_AEC oDtlnAec;
 
-    nFrameSize = oDtlnAec.Init();
+    nFrameSize = oDtlnAec.Init(model1.c_str(), model2.c_str());
 
     lpsInputRefSample = new short[nFrameSize];
     lpsInputRecSample = new short[nFrameSize];
