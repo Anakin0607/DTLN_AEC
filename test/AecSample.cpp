@@ -2,6 +2,8 @@
 
 #include <string>
 #include "DTLN_AEC.h"
+#include "wav_reader.h"
+#include <cstring>
 
 int main(int argc, char *argv[]){
     //lpszInputRefWave is a reference data(far end)
@@ -35,12 +37,15 @@ int main(int argc, char *argv[]){
     lpsInputRecSample = new short[nFrameSize];
     lpsOutputSample = new short[nFrameSize];
 
-    //Skip wave header
-    fread(lpsInputRefSample, 1, 44, lpoInputRefFile);
-    fread(lpsInputRecSample, 1, 44, lpoInputRecFile);
+    //read wav header
+    wav_reader::WavHeader header_ref;
+    wav_reader::WavHeader header_rec;
+    fread(&header_ref, 1, 44, lpoInputRefFile);
+    fread(&header_rec, 1, 44, lpoInputRecFile);
 
-    while (true)
-    {
+    uint8_t* output_buffer = (uint8_t*)malloc(header_rec.data_chunk_size);
+    int tot_frames = 0;
+    while (true){
         nReadSize = fread(lpsInputRefSample, 1, nFrameSize * sizeof(short), lpoInputRefFile);
         if (nReadSize <= 0)
             break;
@@ -52,9 +57,20 @@ int main(int argc, char *argv[]){
         oDtlnAec.Process(lpsInputRefSample, lpsInputRecSample, lpsOutputSample);
 
         //write PCM
-        fwrite(lpsOutputSample, 1, nFrameSize * sizeof(short), lpoOutputFile);
+        //fwrite(lpsOutputSample, 1, nFrameSize * sizeof(short), lpoOutputFile);
+        memcpy(output_buffer + tot_frames * sizeof(short), lpsOutputSample, nFrameSize * sizeof(short));
+        tot_frames += nFrameSize;
     }
 
+    wav_reader::WritePCM2WavFile(lpoOutputFile, 
+                        output_buffer, 
+                        tot_frames, 
+                        header_rec.sample_rate,
+                        header_rec.bits_per_sample,
+                        header_rec.num_channels
+                    );
+    
+    free(output_buffer);
     fclose(lpoInputRefFile);
     fclose(lpoInputRecFile);
     fclose(lpoOutputFile);
