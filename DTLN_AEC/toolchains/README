@@ -1,0 +1,5 @@
+To install aarch64 crossbuild-toolchain:
+"sudo apt-get install crossbuild-essential-arm64"
+
+To install arm32 crossbuild-toolchain:
+"sudo apt-get install crossbuild-essential-armhf"
