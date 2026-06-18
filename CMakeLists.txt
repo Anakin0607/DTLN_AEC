@@ -88,7 +88,7 @@ else()
     message(STATUS "Using prebuilt TensorFlow Lite libraries...")
     set(TFLITE_LIB_TARGET tensorflowlite_c)
     set(TFLITE_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/TensorFlowLite)
-    link_directories(${CMAKE_SOURCE_DIR}/TensorFlowLite/lib/${ARCH_NAME})
+    link_directories(${CMAKE_SOURCE_DIR}/TensorFlowLite/lib/${ARCH_NAME}) # link_directories必须要放在依赖此目录中库的可执行文件的add_library或add_executable之前
     include_directories(${CMAKE_SOURCE_DIR}/TensorFlowLite)
 endif()
 

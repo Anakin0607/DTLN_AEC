@@ -1,3 +1,6 @@
 *build*/
 .deps_cache/*
 test/lib/*
+test/*out*
+test/sample_test
+DTLN_AEC*/
