@@ -21,8 +21,7 @@ constexpr auto k_nNumModels = 2;
 
 constexpr auto k_nNumThreads = 1;
 
-class DTLN_AEC::m_Impl
-{
+class DTLN_AEC::m_Impl{
 public:
 	
 	int Init(const char* model_path1, const char* model_path2);
@@ -74,8 +73,7 @@ public:
 		
 };
 
-int DTLN_AEC::m_Impl::Init(const char* model_path1, const char* model_path2)
-{
+int DTLN_AEC::m_Impl::Init(const char* model_path1, const char* model_path2){
 	int nRet = -1;
 
 	if(model_path1 == nullptr || model_path2 == nullptr){
@@ -83,7 +81,7 @@ int DTLN_AEC::m_Impl::Init(const char* model_path1, const char* model_path2)
 	}
 
 	do {
-		for (int i = 0; i < k_nNumModels; i++){
+		for (int i = 0; i < k_nNumModels; i++) {
 			this->m_lppoTfliteModel[i] = nullptr;
 			this->m_lppoInterpreter[i] = nullptr;
 
@@ -125,8 +123,7 @@ int DTLN_AEC::m_Impl::Init(const char* model_path1, const char* model_path2)
 		//Input tensor order:
 		//Model_1[] = {rec, ref, state}
 		//Model_2[] = {ref, state, est}
-		for (int i = 0; i < k_nNumModels; i++)
-		{
+		for (int i = 0; i < k_nNumModels; i++){
 			this->m_lppoInputTensor[i][0] = TfLiteInterpreterGetInputTensor(this->m_lppoInterpreter[i], 0);
 			this->m_lppoInputTensor[i][1] = TfLiteInterpreterGetInputTensor(this->m_lppoInterpreter[i], 1);
 			this->m_lppoInputTensor[i][2] = TfLiteInterpreterGetInputTensor(this->m_lppoInterpreter[i], 2);
@@ -177,8 +174,7 @@ int DTLN_AEC::m_Impl::Init(const char* model_path1, const char* model_path2)
 		memset(this->m_lpfEstimatedBlock, 0, k_nWindowSize * sizeof(float));
 
 
-		for (int i = 0; i < k_nNumModels; i++)
-		{
+		for (int i = 0; i < k_nNumModels; i++){
 			this->m_lppfStates[i] = new float[this->m_lpnStateSize[i]];
 			memset(this->m_lppfStates[i], 0, this->m_lpnStateSize[i] * sizeof(float));
 		}
@@ -202,8 +198,7 @@ int DTLN_AEC::m_Impl::Init(const char* model_path1, const char* model_path2)
 	return nRet;
 }
 
-void DTLN_AEC::m_Impl::Release(void)
-{
+void DTLN_AEC::m_Impl::Release(void){
 	//Tensorflow lite
 	for (int i = 0; i < k_nNumModels; i++)
 	{
@@ -282,12 +277,10 @@ void DTLN_AEC::m_Impl::Release(void)
 		delete[] this->m_lpfOutputSample;
 }
 
-int DTLN_AEC::m_Impl::Process(short *lpsRefBuffer, short *lpsRecBuffer, short *lpsOutputBuffer)
-{
+int DTLN_AEC::m_Impl::Process(short *lpsRefBuffer, short *lpsRecBuffer, short *lpsOutputBuffer){
 	int nRet = -1;
 
-	do
-	{
+	do{
 		if (this->m_bInitSuccess == false)
 			break;
 
@@ -295,41 +288,32 @@ int DTLN_AEC::m_Impl::Process(short *lpsRefBuffer, short *lpsRecBuffer, short *l
 			break;
 
 		//Convert short to float
-		for (int i = 0; i < k_nWindowSize; i++)
-		{
+		for (int i = 0; i < k_nWindowSize; i++){
 			this->m_lpfInputRefSample[i] = (float)lpsRefBuffer[i] * 1.0f / SHRT_MAX;
-		}
-
-		for (int i = 0; i < k_nWindowSize; i++)
-		{
 			this->m_lpfInputRecSample[i] = (float)lpsRecBuffer[i] * 1.0f / SHRT_MAX;
 		}
 
 		this->AEC();
 
 		//Convert float to short
-		for (int i = 0; i < k_nWindowSize; i++)
-		{
+		for (int i = 0; i < k_nWindowSize; i++){
 			lpsOutputBuffer[i] = (short)(this->m_lpfOutputSample[i] * SHRT_MAX);
 		}
 
 		nRet = 0;
-	} 
-	while (0);
+	} while (0);
 
 	return nRet;
 }
 
-void DTLN_AEC::m_Impl::AEC(void)
-{
+void DTLN_AEC::m_Impl::AEC(void){
 	int nNumBlocks = k_nWindowSize / k_nWindowShift;
 
 	float *pfInputRefSample = this->m_lpfInputRefSample;
 	float *pfInputRecSample = this->m_lpfInputRecSample;
 	float *pfOutputSample = this->m_lpfOutputSample;
 
-	for (int i = 0; i < nNumBlocks; i++)
-	{
+	for (int i = 0; i < nNumBlocks; i++){
 		//Buffer shift to match FFT size
 		memmove(this->m_lpfInputRefBuffer, this->m_lpfInputRefBuffer + k_nWindowShift, (k_nWindowSize - k_nWindowShift) * sizeof(float));
 		memcpy(this->m_lpfInputRefBuffer + (k_nWindowSize - k_nWindowShift), pfInputRefSample, k_nWindowShift * sizeof(float));
@@ -353,8 +337,7 @@ void DTLN_AEC::m_Impl::AEC(void)
 		kiss_fftr(this->m_lpoFftrCfg, this->m_lpfInputRecBuffer, this->m_lpoInputRecCpx);
 
 		//Calculate Mag/Phase
-		for (int j = 0; j < k_nFftForTensorSize; j++)
-		{
+		for (int j = 0; j < k_nFftForTensorSize; j++){
 			//How to calculate Mag/Phase:
 			//check 3a/3b in https://www.gaussianwaves.com/2015/11/interpreting-fft-results-obtaining-magnitude-and-phase-information/
 			this->m_lpfInputRefMag[j] = sqrtf(this->m_lpoInputRefCpx[j].r * this->m_lpoInputRefCpx[j].r + this->m_lpoInputRefCpx[j].i * this->m_lpoInputRefCpx[j].i);
@@ -379,8 +362,7 @@ void DTLN_AEC::m_Impl::AEC(void)
 		//iRFFT
 		//this->m_lpfDtlnFreqOutput is out_mask
 		//Use orignal Mag/Phase to restore generated freq
-		for (int j = 0; j < k_nFftForTensorSize; j++)
-		{
+		for (int j = 0; j < k_nFftForTensorSize; j++){
 			//Re{ z } = Re{ a + ib } = Mag * cos[φ] * freq
 			//Im{ z } = Im{ a + ib } = Mag * sin[φ] * freq
 			this->m_lpoOutputCpx[j].r = this->m_lpfInputRecMag[j] * cosf(this->m_lpfInputRecPhase[j]) * this->m_lpfDtlnFreqOutput[j];
@@ -421,24 +403,19 @@ void DTLN_AEC::m_Impl::AEC(void)
 	}
 }
 
-DTLN_AEC::DTLN_AEC() :m_lpoImpl(new DTLN_AEC::m_Impl)
-{
-}
+DTLN_AEC::DTLN_AEC() :m_lpoImpl(new DTLN_AEC::m_Impl){}
 
-DTLN_AEC::~DTLN_AEC()
-{
+DTLN_AEC::~DTLN_AEC(){
 	this->m_lpoImpl->Release();
 
 	delete this->m_lpoImpl;
 	this->m_lpoImpl = nullptr;
 }
 
-int DTLN_AEC::Init(const char* model_path1, const char* model_path2)
-{
+int DTLN_AEC::Init(const char* model_path1, const char* model_path2){
 	return this->m_lpoImpl->Init(model_path1, model_path2);
 }
 
-int DTLN_AEC::Process(short *lpsRefBuffer, short *lpsRecBuffer, short *lpsOutputBuffer)
-{
+int DTLN_AEC::Process(short *lpsRefBuffer, short *lpsRecBuffer, short *lpsOutputBuffer){
 	return this->m_lpoImpl->Process(lpsRefBuffer, lpsRecBuffer, lpsOutputBuffer);
 }
